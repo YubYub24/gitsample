@@ -3,37 +3,43 @@ pipeline {
         label "docker"
     }
 
- parameters {
-    string(name: 'DOCKER_USERNAME', defaultValue: 'your-default-username', description: 'Docker Hub username (e.g. teamA)')
-    string(name: 'IMAGE_NAME', defaultValue: 'sched_image', description: 'Docker image name')
-}
-
+    parameters {
+        string(name: 'DOCKER_USERNAME', defaultValue: 'your-default-username', description: 'Docker Hub username (e.g. teamA)')
+        string(name: 'IMAGE_NAME', defaultValue: 'sched_image', description: 'Docker image name')
+    }
 
     environment {
-        DOCKER_CREDS = credentials('docker-hub-creds') // still used for login
-        IMAGE_TAG = "${BUILD_NUMBER}"
-        FULL_IMAGE = "${params.DOCKER_USERNAME}/${params.IMAGE_NAME}:${IMAGE_TAG}"
-        LATEST_IMAGE = "${params.DOCKER_USERNAME}/${params.IMAGE_NAME}:latest"
+        DOCKER_CREDS = credentials('docker-hub-creds') // used for login
     }
 
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    checkout scm
-                }
+                checkout scm
             }
         }
 
         stage('Build') {
             steps {
                 script {
+                    def dockerUsername = params.DOCKER_USERNAME?.trim() ?: 'your-default-username'
+                    def imageName = params.IMAGE_NAME
+                    def imageTag = env.BUILD_NUMBER
+                    def fullImage = "${dockerUsername}/${imageName}:${imageTag}"
+                    def latestImage = "${dockerUsername}/${imageName}:latest"
+
+                    echo "Building Docker image: ${fullImage}"
+
                     sh """
                         docker build \\
                         --network=host \\
-                        -t ${FULL_IMAGE} \\
-                        -t ${LATEST_IMAGE} .
+                        -t ${fullImage} \\
+                        -t ${latestImage} .
                     """
+
+                    // Save image names for later stages
+                    env.FULL_IMAGE = fullImage
+                    env.LATEST_IMAGE = latestImage
                 }
             }
         }
@@ -42,8 +48,8 @@ pipeline {
             steps {
                 script {
                     sh "echo ${DOCKER_CREDS_PSW} | docker login -u ${params.DOCKER_USERNAME} --password-stdin"
-                    sh "docker push ${FULL_IMAGE}"
-                    sh "docker push ${LATEST_IMAGE}"
+                    sh "docker push ${env.FULL_IMAGE}"
+                    sh "docker push ${env.LATEST_IMAGE}"
                 }
             }
         }
@@ -51,7 +57,6 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 script {
-                    // Replace image placeholder in manifests and apply
                     def manifests = [
                         'k8s/deployment-canary.yaml',
                         'k8s/deployment-stable.yaml',
@@ -62,7 +67,7 @@ pipeline {
 
                     for (manifest in manifests) {
                         sh """
-                            sed 's|__DOCKER_IMAGE__|${FULL_IMAGE}|g' ${manifest} | kubectl apply -f -
+                            sed 's|__DOCKER_IMAGE__|${env.FULL_IMAGE}|g' ${manifest} | kubectl apply -f -
                         """
                     }
                 }
