@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler-stable
+  namespace: scheduler-ns
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: scheduler
+      track: stable
+  template:
+    metadata:
+      labels:
+        app: scheduler
+        track: stable
+    spec:
+      containers:
+        - name: scheduler
+          image: your-dockerhub-username/sched_image:latest
+          ports:
+            - containerPort: 8080
