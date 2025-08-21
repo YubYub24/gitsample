@@ -1,22 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: scheduler-canary
-  namespace: scheduler-ns
+  name: sched-canary
+  namespace: team-scheduling
+  labels:
+    app: sched-app
+    track: canary
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: scheduler
+      app: sched-app
       track: canary
   template:
     metadata:
       labels:
-        app: scheduler
+        app: sched-app
         track: canary
     spec:
       containers:
-        - name: scheduler
-          image: your-dockerhub-username/sched_image:latest
+        - name: sched-container
+          image: /sched_image:latest
           ports:
-            - containerPort: 8080
+            - containerPort: 3000
+          volumeMounts:
+            - name: sched-storage
+              mountPath: /data
+      volumes:
+        - name: sched-storage
+          persistentVolumeClaim:
+            claimName: sched-pvc
+
