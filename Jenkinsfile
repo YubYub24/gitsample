@@ -1,6 +1,6 @@
 pipeline {
     agent {
-        label "docker"
+        label 'docker'
     }
 
     parameters {
@@ -22,8 +22,8 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    def dockerUsername = params.DOCKER_USERNAME?.trim() ?: 'your-default-username'
-                    def imageName = params.IMAGE_NAME
+                    def dockerUsername = params.DOCKER_USERNAME.trim()
+                    def imageName = params.IMAGE_NAME.trim()
                     def imageTag = env.BUILD_NUMBER
                     def fullImage = "${dockerUsername}/${imageName}:${imageTag}"
                     def latestImage = "${dockerUsername}/${imageName}:latest"
@@ -45,19 +45,18 @@ pipeline {
         }
 
         stage('Push') {
-    steps {
-        script {
-            withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                sh """
-                    echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-                    docker push ${env.FULL_IMAGE}
-                    docker push ${env.LATEST_IMAGE}
-                """
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh """
+                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                            docker push ${env.FULL_IMAGE}
+                            docker push ${env.LATEST_IMAGE}
+                        """
+                    }
+                }
             }
         }
-    }
-}
-
 
         stage('Deploy to Kubernetes') {
             steps {
@@ -72,7 +71,7 @@ pipeline {
 
                     for (manifest in manifests) {
                         sh """
-                            sed 's|__DOCKER_IMAGE__|${env.FULL_IMAGE}|g' ${manifest} | kubectl apply -f -
+                            sed "s|__DOCKER_IMAGE__|${env.FULL_IMAGE}|g" ${manifest} | kubectl apply -f -
                         """
                     }
                 }
