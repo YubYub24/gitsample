@@ -3,10 +3,11 @@ pipeline {
         label "docker"
     }
 
-    parameters {
-        string(name: 'DOCKER_USERNAME', defaultValue: '', description: 'Docker Hub username (e.g. teamA)')
-        string(name: 'IMAGE_NAME', defaultValue: 'sched_image', description: 'Docker image name')
-    }
+ parameters {
+    string(name: 'DOCKER_USERNAME', defaultValue: 'your-default-username', description: 'Docker Hub username (e.g. teamA)')
+    string(name: 'IMAGE_NAME', defaultValue: 'sched_image', description: 'Docker image name')
+}
+
 
     environment {
         DOCKER_CREDS = credentials('docker-hub-creds') // still used for login
