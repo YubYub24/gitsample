@@ -45,14 +45,19 @@ pipeline {
         }
 
         stage('Push') {
-            steps {
-                script {
-                    sh "echo ${DOCKER_CREDS_PSW} | docker login -u ${params.DOCKER_USERNAME} --password-stdin"
-                    sh "docker push ${env.FULL_IMAGE}"
-                    sh "docker push ${env.LATEST_IMAGE}"
-                }
+    steps {
+        script {
+            withCredentials([usernamePassword(credentialsId: 'docker-hub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                sh """
+                    echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
+                    docker push ${env.FULL_IMAGE}
+                    docker push ${env.LATEST_IMAGE}
+                """
             }
         }
+    }
+}
+
 
         stage('Deploy to Kubernetes') {
             steps {
