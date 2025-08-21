@@ -20,14 +20,8 @@ spec:
     spec:
       containers:
         - name: sched-container
-          image: /sched_image:latest
+          image: __DOCKER_IMAGE__
           ports:
             - containerPort: 3000
-          volumeMounts:
-            - name: sched-storage
-              mountPath: /data
-      volumes:
-        - name: sched-storage
-          persistentVolumeClaim:
-            claimName: sched-pvc
+
 
