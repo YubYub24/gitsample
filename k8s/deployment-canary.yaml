@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler-canary
+  namespace: scheduler-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: scheduler
+        track: canary
+    spec:
+      containers:
+        - name: scheduler
+          image: your-dockerhub-username/sched_image:latest
+          ports:
+            - containerPort: 8080
