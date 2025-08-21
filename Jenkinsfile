@@ -26,6 +26,7 @@ pipeline {
                 script {
                     sh """
                         docker build \\
+                        --network=host \\
                         -t ${FULL_IMAGE} \\
                         -t ${LATEST_IMAGE} .
                     """
